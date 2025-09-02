@@ -1,0 +1,11 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "types": []
+  },
+  "include": [
+    "nitro.config.ts",
+    "routes",
+    "server"
+  ]
+}

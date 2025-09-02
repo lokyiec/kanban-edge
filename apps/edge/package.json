@@ -1,0 +1,20 @@
+{
+  "name": "@kanban-edge/edge",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "nitro dev",
+    "build": "nitro build",
+    "lint": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest"
+  },
+  "dependencies": {
+    "@kanban-edge/types": "*"
+  },
+  "devDependencies": {
+    "nitropack": "latest",
+    "typescript": "^5.4.0",
+    "vitest": "^1.6.0"
+  }
+}

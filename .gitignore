@@ -1,0 +1,25 @@
+# Dependencies
+node_modules/
+
+# Turbo cache
+.turbo/
+
+# Builds
+dist/
+.output/
+.nitro/
+coverage/
+
+# Env
+.env
+.env.*
+
+# Platform-specific
+.DS_Store
+
+# Vite
+.vite/
+
+# Cloudflare
+.wrangler/
+
