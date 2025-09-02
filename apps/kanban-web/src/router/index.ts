@@ -1,14 +1,13 @@
 import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router'
 
 const routes: RouteRecordRaw[] = [
-  { path: '/', redirect: '/boards' },
   {
-    path: '/boards',
-    name: 'boards',
-    component: () => import('../pages/Boards.vue'),
+    path: '/',
+    name: 'home',
+    component: () => import('../pages/RedirectToFirstBoard.vue'),
   },
   {
-    path: '/boards/:id',
+    path: '/boards/:slug',
     name: 'board',
     component: () => import('../pages/Board.vue'),
     props: true,
@@ -21,4 +20,3 @@ const router = createRouter({
 })
 
 export default router
-
