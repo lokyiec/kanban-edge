@@ -6,8 +6,16 @@
     <title>Kanban Web</title>
   </head>
   <body>
+    <script>
+      // Set initial theme early to avoid FOUC
+      try {
+        const stored = localStorage.getItem('theme')
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+        const isDark = stored ? stored === 'dark' : prefersDark
+        document.documentElement.classList.toggle('dark', isDark)
+      } catch {}
+    </script>
     <div id="app"></div>
     <script type="module" src="/src/main.ts"></script>
   </body>
   </html>
-
