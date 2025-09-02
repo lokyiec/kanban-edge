@@ -23,7 +23,7 @@ const colors = [
     <div v-if="board && board.columns.length === 0" class="flex h-full items-center justify-center">
       <div class="text-center">
         <p class="text-muted-foreground">This board is empty. Create a new column to get started.</p>
-        <button class="mt-4 rounded-full bg-primary px-4 py-2 text-sm text-primary-foreground">+ Add New Column</button>
+        <button class="btn-primary mt-4">+ Add New Column</button>
       </div>
     </div>
 

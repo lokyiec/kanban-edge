@@ -23,8 +23,8 @@ const currentBoardTitle = computed(() => {
       <span class="font-semibold">{{ currentBoardTitle }}</span>
     </div>
     <div class="flex items-center gap-2">
-      <button class="rounded-full bg-primary px-4 py-2 text-sm text-primary-foreground">+ Add New Task</button>
-      <button class="h-9 w-9 rounded-full border">⋯</button>
+      <button class="btn-primary">+ Add New Task</button>
+      <button class="btn-outline h-9 w-9 p-0">⋯</button>
       <ThemeToggle />
     </div>
   </header>
