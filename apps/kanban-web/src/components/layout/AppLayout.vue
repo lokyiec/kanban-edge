@@ -6,11 +6,15 @@ const ui = useUiStore()
 </script>
 
 <template>
-  <div class="grid h-dvh grid-rows-[auto_1fr]">
-    <AppHeader />
-    <div class="grid grid-cols-[auto_1fr] md:grid-cols-[auto_1fr]">
-      <AppSidebar />
-      <main class="p-4" :class="ui.sidebarHidden ? 'md:col-span-2' : ''">
+  <div
+    class="grid h-dvh"
+    :class="ui.sidebarHidden ? 'grid-cols-1' : 'grid-cols-[auto_1fr]'"
+  >
+    <AppSidebar />
+
+    <div class="grid grid-rows-[auto_1fr]" :class="ui.sidebarHidden ? '' : 'border-l'">
+      <AppHeader />
+      <main class="p-4 overflow-auto">
         <slot />
       </main>
     </div>
