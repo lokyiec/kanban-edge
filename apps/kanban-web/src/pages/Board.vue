@@ -29,7 +29,8 @@ const colors = [
 
     <!-- Columns -->
     <div v-else class="h-full overflow-x-auto">
-      <div class="flex gap-6 pr-6">
+      <!-- board content area padding to match design -->
+      <div class="flex h-full gap-6 px-6 py-6">
         <div v-for="(col, i) in board?.columns" :key="col.id" class="min-w-[280px] flex-shrink-0">
           <div class="mb-3 flex items-center gap-2">
             <span class="h-2.5 w-2.5 rounded-full" :class="colors[i % colors.length]"></span>
@@ -37,19 +38,25 @@ const colors = [
               {{ col.title }} ({{ col.cards.length }})
             </h3>
           </div>
-          <div class="grid gap-3">
+          <div class="grid gap-4">
             <article
               v-for="card in col.cards"
               :key="card.id"
-              class="rounded-md bg-card p-4 text-sm shadow-sm border"
+              class="rounded-lg bg-card p-4 text-sm shadow-md border transition-shadow hover:shadow-lg"
             >
               {{ card.title }}
               <div class="mt-2 text-xs text-muted-foreground">0 of 0 subtasks</div>
             </article>
           </div>
         </div>
-        <button class="min-w-[280px] flex-shrink-0 self-start rounded-md bg-gradient-to-br from-accent/40 to-accent/20 p-4 text-left text-sm hover:from-accent/60">
-          + New Column
+        <!-- New Column placeholder matching design -->
+        <button
+          class="group min-w-[280px] h-full flex-shrink-0 self-stretch mt-7 rounded-lg border border-dashed border-muted-foreground/20 bg-muted/20 p-4 text-lg font-medium text-primary/70 transition-colors hover:bg-muted/30 hover:text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          type="button"
+        >
+          <div class="h-full w-full grid place-content-center">
+            + New Column
+          </div>
         </button>
       </div>
     </div>
