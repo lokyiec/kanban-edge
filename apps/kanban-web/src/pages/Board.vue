@@ -2,6 +2,8 @@
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useBoardsStore } from '../stores/boards'
+import { VueDraggable } from 'vue-draggable-plus'
+import type { Column } from '../stores/boards'
 
 const route = useRoute()
 const boards = useBoardsStore()
@@ -15,6 +17,13 @@ const colors = [
   'bg-amber-500',
   'bg-pink-500',
 ]
+
+function handleAdd(targetCol: Column, evt: any) {
+  // When a card is dropped into a new column, update its columnId
+  const index = typeof evt?.newIndex === 'number' ? evt.newIndex : -1
+  const card = targetCol.cards?.[index]
+  if (card) card.columnId = targetCol.id
+}
 </script>
 
 <template>
@@ -38,16 +47,25 @@ const colors = [
               {{ col.title }} ({{ col.cards.length }})
             </h3>
           </div>
-          <div class="grid gap-4">
+          <VueDraggable
+            v-model="col.cards"
+            :animation="200"
+            group="kanban-cards"
+            item-key="id"
+            ghost-class="opacity-50"
+            tag="div"
+            class="grid gap-4 min-h-10"
+            @add="handleAdd(col, $event)"
+          >
             <article
               v-for="card in col.cards"
               :key="card.id"
-              class="rounded-lg bg-card p-4 text-sm shadow-md border transition-shadow hover:shadow-lg"
+              class="rounded-lg bg-card p-4 text-sm shadow-md border transition-shadow hover:shadow-lg cursor-move"
             >
               {{ card.title }}
               <div class="mt-2 text-xs text-muted-foreground">0 of 0 subtasks</div>
             </article>
-          </div>
+          </VueDraggable>
         </div>
         <!-- New Column placeholder matching design -->
         <button
