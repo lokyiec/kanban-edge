@@ -1,11 +1,12 @@
 import { defineStore } from 'pinia'
+import { ref } from 'vue'
 
-export const useUiStore = defineStore('ui', {
-  state: () => ({ sidebarHidden: false }),
-  actions: {
-    toggleSidebar() { this.sidebarHidden = !this.sidebarHidden },
-    showSidebar() { this.sidebarHidden = false },
-    hideSidebar() { this.sidebarHidden = true },
-  },
+export const useUiStore = defineStore('ui', () => {
+  const sidebarHidden = ref(false)
+
+  function toggleSidebar() { sidebarHidden.value = !sidebarHidden.value }
+  function showSidebar() { sidebarHidden.value = false }
+  function hideSidebar() { sidebarHidden.value = true }
+
+  return { sidebarHidden, toggleSidebar, showSidebar, hideSidebar }
 })
-
