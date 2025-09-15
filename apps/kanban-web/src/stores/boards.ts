@@ -98,10 +98,26 @@ export const useBoardsStore = defineStore('boards', () => {
   ])
 
   const firstBoardSlug = computed(() => boards.value[0]?.slug);
-  
-  function getBySlug (slug: string) {
+
+  function getBySlug(slug: string) {
     return boards.value.find(b => b.slug === slug) || null
   }
 
-  return { boards, firstBoardSlug, getBySlug }
+  function getById(id: string) {
+    return boards.value.find(b => b.id === id) || null
+  }
+
+  function generateId(prefix: string) {
+    return `${prefix}${Math.random().toString(36).slice(2, 9)}`
+  }
+
+  function addColumn(boardId: string, title = 'New Column') {
+    const b = getById(boardId)
+    if (!b) return null
+    const column: Column = { id: generateId('c'), boardId: b.id, title, cards: [] }
+    b.columns.push(column)
+    return column
+  }
+
+  return { boards, firstBoardSlug, getBySlug, getById, addColumn }
 })

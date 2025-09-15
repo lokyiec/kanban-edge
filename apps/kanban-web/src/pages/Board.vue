@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { useBoardsStore } from '../stores/boards'
 import { VueDraggable } from 'vue-draggable-plus'
 import type { Column } from '../stores/boards'
+import AddColumnModal from '../components/boards/AddColumnModal.vue'
 
 const route = useRoute()
 const boards = useBoardsStore()
@@ -24,6 +25,8 @@ function handleAdd(targetCol: Column, evt: any) {
   const card = targetCol.cards?.[index]
   if (card) card.columnId = targetCol.id
 }
+const showAddColumn = ref(false)
+function openCreateColumn() { showAddColumn.value = true }
 </script>
 
 <template>
@@ -32,7 +35,7 @@ function handleAdd(targetCol: Column, evt: any) {
     <div v-if="board && board.columns.length === 0" class="flex h-full items-center justify-center">
       <div class="text-center">
         <p class="text-muted-foreground">This board is empty. Create a new column to get started.</p>
-        <button class="btn-primary mt-4">+ Add New Column</button>
+        <button class="btn-primary mt-4" @click="openCreateColumn">+ Add New Column</button>
       </div>
     </div>
 
@@ -71,6 +74,7 @@ function handleAdd(targetCol: Column, evt: any) {
         <button
           class="group min-w-[280px] h-full flex-shrink-0 self-stretch mt-7 rounded-lg border border-dashed border-muted-foreground/20 bg-muted/20 p-4 text-lg font-medium text-primary/70 transition-colors hover:bg-muted/30 hover:text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           type="button"
+          @click="openCreateColumn"
         >
           <div class="h-full w-full grid place-content-center">
             + New Column
@@ -78,5 +82,6 @@ function handleAdd(targetCol: Column, evt: any) {
         </button>
       </div>
     </div>
+    <AddColumnModal v-model="showAddColumn" :board-id="board?.id ?? null" />
   </section>
 </template>
