@@ -45,6 +45,7 @@ const activeSlug = computed(() => route.params.slug as string | undefined)
         <button
           class="mt-2 w-full rounded-full px-3 py-2 text-left text-sm text-primary hover:underline"
           type="button"
+          @click="ui.openCreateBoardModal()"
         >
           + Create New Board
         </button>

@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import AppHeader from './AppHeader.vue'
 import AppSidebar from './AppSidebar.vue'
+import AddBoardModal from '../boards/AddBoardModal.vue'
 import { useUiStore } from '../../stores/ui'
+
 const ui = useUiStore()
 </script>
 
@@ -19,4 +21,5 @@ const ui = useUiStore()
       </main>
     </div>
   </div>
+  <AddBoardModal v-model="ui.createBoardModalOpen" />
 </template>

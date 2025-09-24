@@ -111,6 +111,32 @@ export const useBoardsStore = defineStore('boards', () => {
     return `${prefix}${Math.random().toString(36).slice(2, 9)}`
   }
 
+  function slugify(value: string) {
+    return value
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-')
+  }
+
+  function createUniqueSlug(title: string) {
+    const base = slugify(title)
+    if (!base) {
+      let slug = generateId('board-')
+      while (boards.value.some(b => b.slug === slug)) slug = generateId('board-')
+      return slug
+    }
+
+    let slug = base
+    let counter = 1
+    while (boards.value.some(b => b.slug === slug)) {
+      slug = `${base}-${counter}`
+      counter += 1
+    }
+    return slug
+  }
+
   function addColumn(boardId: string, title = 'New Column') {
     const b = getById(boardId)
     if (!b) return null
@@ -119,5 +145,26 @@ export const useBoardsStore = defineStore('boards', () => {
     return column
   }
 
-  return { boards, firstBoardSlug, getBySlug, getById, addColumn }
+  function addBoard(title: string, columnTitles: string[] = []) {
+    const boardTitle = title.trim()
+    if (!boardTitle) return null
+
+    const id = generateId('b')
+    const slug = createUniqueSlug(boardTitle)
+    const columns: Column[] = columnTitles.map(colTitle => {
+      const trimmed = colTitle.trim()
+      return {
+        id: generateId('c'),
+        boardId: id,
+        title: trimmed,
+        cards: [],
+      }
+    }).filter(col => col.title.length > 0)
+
+    const board: Board = { id, slug, title: boardTitle, columns }
+    boards.value.push(board)
+    return board
+  }
+
+  return { boards, firstBoardSlug, getBySlug, getById, addColumn, addBoard }
 })

@@ -37,7 +37,7 @@ function submit() {
 </script>
 
 <template>
-  <Modal v-model="open" title="Add New Column">
+  <Modal v-model="open" :closeOnBackdrop="true" title="Add New Column">
     <div class="grid gap-2 text-sm">
       <label class="text-xs font-medium text-muted-foreground">Column Name</label>
       <input v-model="title" class="input" type="text" placeholder="e.g. Todo" @keyup.enter="submit" />
