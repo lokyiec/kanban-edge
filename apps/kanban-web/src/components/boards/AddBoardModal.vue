@@ -3,6 +3,7 @@ import { ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import Modal from '../ui/Modal.vue'
 import { useBoardsStore } from '../../stores/boards'
+import { z } from 'zod'
 
 const props = defineProps<{ modelValue: boolean }>()
 const emit = defineEmits<{ (e: 'update:modelValue', v: boolean): void }>()
@@ -15,6 +16,13 @@ const columnsError = ref('')
 
 const boards = useBoardsStore()
 const router = useRouter()
+
+const formSchema = z.object({
+  name: z.string().trim().min(1, 'Board name is required'),
+  columns: z
+    .array(z.string().trim().min(1, 'Column name is required'))
+    .min(1, 'Add at least one column'),
+})
 
 function createColumnField(value = '') {
   return { id: Math.random().toString(36).slice(2, 9), title: value }
@@ -66,20 +74,24 @@ function removeColumnField(id: string) {
 function submit() {
   nameError.value = ''
   columnsError.value = ''
-  const boardTitle = name.value.trim()
-  const columnTitles = columns.value.map(col => col.title.trim()).filter(Boolean)
 
-  if (!boardTitle) {
-    nameError.value = 'Board name is required'
-  }
-  if (columnTitles.length === 0) {
-    columnsError.value = 'Add at least one column'
-  }
-  if (nameError.value || columnsError.value) {
+  const result = formSchema.safeParse({
+    name: name.value,
+    columns: columns.value.map(col => col.title),
+  })
+
+  if (!result.success) {
+    const issues = result.error.issues
+    for (const issue of issues) {
+      const [field] = issue.path
+      if (field === 'name' && !nameError.value) nameError.value = issue.message
+      if (field === 'columns' && !columnsError.value) columnsError.value = issue.message
+    }
     ensureFormInitialised()
     return
   }
 
+  const { name: boardTitle, columns: columnTitles } = result.data
   const board = boards.addBoard(boardTitle, columnTitles)
   if (!board) {
     nameError.value = 'Could not create board'
