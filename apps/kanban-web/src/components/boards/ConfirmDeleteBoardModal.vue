@@ -41,7 +41,7 @@ function close() {
 }
 
 function navigateAfterDelete() {
-  if (boards.boards.length > 0) {
+  if (boards.boards.value.length > 0) {
     const nextSlug = boards.firstBoardSlug.value
     if (nextSlug) {
       router.push({ name: 'board', params: { slug: nextSlug } })

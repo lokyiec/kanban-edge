@@ -1,10 +1,13 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useBoardsStore } from '../stores/boards'
 import { VueDraggable } from 'vue-draggable-plus'
 import type { Column } from '../stores/boards'
 import AddColumnModal from '../components/boards/AddColumnModal.vue'
+import ViewTaskModal from '../components/tasks/ViewTaskModal.vue'
+import EditTaskModal from '../components/tasks/EditTaskModal.vue'
+import ConfirmDeleteTaskModal from '../components/tasks/ConfirmDeleteTaskModal.vue'
 
 const route = useRoute()
 const boards = useBoardsStore()
@@ -27,6 +30,59 @@ function handleAdd(targetCol: Column, evt: any) {
 }
 const showAddColumn = ref(false)
 function openCreateColumn() { showAddColumn.value = true }
+
+const selectedTaskId = ref<string | null>(null)
+const showTaskModal = ref(false)
+const showEditTaskModal = ref(false)
+const showDeleteTaskModal = ref(false)
+
+const selectedTaskDetails = computed(() => (selectedTaskId.value ? boards.getCardDetails(selectedTaskId.value) : null))
+const selectedTask = computed(() => selectedTaskDetails.value?.card ?? null)
+watch(selectedTask, value => {
+  if (!value) {
+    showTaskModal.value = false
+    showEditTaskModal.value = false
+    showDeleteTaskModal.value = false
+  }
+})
+
+function openTask(cardId: string) {
+  selectedTaskId.value = cardId
+  showTaskModal.value = true
+}
+
+function handleCloseTaskModal() {
+  showTaskModal.value = false
+}
+
+function handleEditTask() {
+  showTaskModal.value = false
+  showEditTaskModal.value = true
+}
+
+function handleDeleteTask() {
+  showDeleteTaskModal.value = true
+}
+
+function handleTaskUpdated() {
+  showEditTaskModal.value = false
+  showTaskModal.value = true
+}
+
+function handleTaskDeleted() {
+  showTaskModal.value = false
+  showEditTaskModal.value = false
+  showDeleteTaskModal.value = false
+  selectedTaskId.value = null
+}
+
+function closeEditTaskModal() {
+  showEditTaskModal.value = false
+}
+
+function closeDeleteTaskModal() {
+  showDeleteTaskModal.value = false
+}
 </script>
 
 <template>
@@ -63,10 +119,13 @@ function openCreateColumn() { showAddColumn.value = true }
             <article
               v-for="card in col.cards"
               :key="card.id"
-              class="rounded-lg bg-card p-4 text-sm shadow-md border transition-shadow hover:shadow-lg cursor-move"
+              class="rounded-lg bg-card p-4 text-sm shadow-md border transition-shadow hover:shadow-lg cursor-pointer active:cursor-grabbing select-none"
+              @click="openTask(card.id)"
             >
               {{ card.title }}
-              <div class="mt-2 text-xs text-muted-foreground">0 of 0 subtasks</div>
+              <div class="mt-2 text-xs text-muted-foreground">
+                {{ card.subtasks.filter(subtask => subtask.done).length }} of {{ card.subtasks.length }} subtasks
+              </div>
             </article>
           </VueDraggable>
         </div>
@@ -83,5 +142,24 @@ function openCreateColumn() { showAddColumn.value = true }
       </div>
     </div>
     <AddColumnModal v-model="showAddColumn" :board-id="board?.id ?? null" />
+    <ViewTaskModal
+      v-model="showTaskModal"
+      :card-id="selectedTaskId"
+      @close="handleCloseTaskModal"
+      @edit="handleEditTask"
+      @delete="handleDeleteTask"
+    />
+    <EditTaskModal
+      v-model="showEditTaskModal"
+      :card-id="selectedTaskId"
+      @saved="handleTaskUpdated"
+      @cancel="closeEditTaskModal"
+    />
+    <ConfirmDeleteTaskModal
+      v-model="showDeleteTaskModal"
+      :card-id="selectedTaskId"
+      @deleted="handleTaskDeleted"
+      @cancel="closeDeleteTaskModal"
+    />
   </section>
 </template>
