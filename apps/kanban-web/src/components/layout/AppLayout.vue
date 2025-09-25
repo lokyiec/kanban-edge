@@ -2,6 +2,7 @@
 import AppHeader from './AppHeader.vue'
 import AppSidebar from './AppSidebar.vue'
 import AddBoardModal from '../boards/AddBoardModal.vue'
+import ConfirmDeleteBoardModal from '../boards/ConfirmDeleteBoardModal.vue'
 import { useUiStore } from '../../stores/ui'
 
 const ui = useUiStore()
@@ -22,4 +23,9 @@ const ui = useUiStore()
     </div>
   </div>
   <AddBoardModal v-model="ui.createBoardModalOpen" />
+  <AddBoardModal v-model="ui.editBoardModalOpen" mode="edit" :board-id="ui.editingBoardId || undefined" />
+  <ConfirmDeleteBoardModal
+    v-model="ui.deleteBoardModalOpen"
+    :board-id="ui.deletingBoardId || undefined"
+  />
 </template>

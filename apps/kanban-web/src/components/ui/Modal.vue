@@ -4,6 +4,7 @@ import { onMounted, onUnmounted, ref, watch } from 'vue'
 const props = defineProps<{
   modelValue: boolean
   title?: string
+  titleClass?: string
   closeOnBackdrop?: boolean
 }>()
 
@@ -37,7 +38,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKey))
     <transition name="pop" appear>
       <div v-if="open" class="fixed inset-0 z-50 grid place-items-center p-4" @click.self="closeOnBackdrop !== false ? close() : null">
         <div class="w-full max-w-lg rounded-lg bg-card text-card-foreground shadow-lg border">
-          <header class="px-5 py-4 border-b text-base font-semibold">{{ title }}</header>
+          <header v-if="title" :class="['px-5 py-4 border-b text-base font-semibold', titleClass]">{{ title }}</header>
           <div class="p-5">
             <slot />
           </div>
@@ -57,4 +58,3 @@ onUnmounted(() => window.removeEventListener('keydown', onKey))
 .pop-enter-active,.pop-leave-active{ transition: transform .15s ease, opacity .15s ease }
 .pop-enter-from,.pop-leave-to{ opacity:0; transform: translateY(8px) scale(.98) }
 </style>
-

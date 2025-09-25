@@ -1,21 +1,29 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import Modal from '../ui/Modal.vue'
 import { useBoardsStore } from '../../stores/boards'
 import { z } from 'zod'
 
-const props = defineProps<{ modelValue: boolean }>()
+const props = withDefaults(
+  defineProps<{ modelValue: boolean; mode?: 'create' | 'edit'; boardId?: string }>(),
+  { mode: 'create', boardId: undefined },
+)
 const emit = defineEmits<{ (e: 'update:modelValue', v: boolean): void }>()
+
+type ColumnField = { key: string; title: string; existingId?: string }
 
 const open = ref(props.modelValue)
 const name = ref('')
 const nameError = ref('')
-const columns = ref<{ id: string; title: string }[]>([])
+const columns = ref<ColumnField[]>([])
 const columnsError = ref('')
 
 const boards = useBoardsStore()
 const router = useRouter()
+const route = useRoute()
+
+const isEdit = computed(() => props.mode === 'edit')
 
 const formSchema = z.object({
   name: z.string().trim().min(1, 'Board name is required'),
@@ -24,8 +32,8 @@ const formSchema = z.object({
     .min(1, 'Add at least one column'),
 })
 
-function createColumnField(value = '') {
-  return { id: Math.random().toString(36).slice(2, 9), title: value }
+function createColumnField(value = '', existingId?: string): ColumnField {
+  return { key: Math.random().toString(36).slice(2, 9), title: value, existingId }
 }
 
 function resetForm() {
@@ -35,23 +43,51 @@ function resetForm() {
   columns.value = [createColumnField(''), createColumnField('')]
 }
 
+function hydrateFromBoard() {
+  if (!props.boardId) {
+    resetForm()
+    return
+  }
+  const board = boards.getById(props.boardId)
+  if (!board) {
+    resetForm()
+    return
+  }
+  name.value = board.title
+  nameError.value = ''
+  columnsError.value = ''
+  columns.value = board.columns.length
+    ? board.columns.map(col => createColumnField(col.title, col.id))
+    : [createColumnField('')]
+}
+
 function ensureFormInitialised() {
   if (columns.value.length === 0) {
-    columns.value = [createColumnField(''), createColumnField('')]
+    columns.value = [createColumnField('')]
   }
 }
 
-watch(() => props.modelValue, v => {
-  open.value = v
-  if (v) {
-    resetForm()
-  }
-})
+watch(
+  () => props.modelValue,
+  v => {
+    open.value = v
+    if (v) {
+      if (isEdit.value) hydrateFromBoard()
+      else resetForm()
+    }
+  },
+)
+
+watch(
+  () => props.boardId,
+  () => {
+    if (open.value && isEdit.value) hydrateFromBoard()
+  },
+)
 
 watch(open, v => {
   emit('update:modelValue', v)
   if (!v) {
-    // leave form reset for next open
     nameError.value = ''
     columnsError.value = ''
   }
@@ -65,9 +101,9 @@ function addColumnField() {
   columns.value.push(createColumnField(''))
 }
 
-function removeColumnField(id: string) {
+function removeColumnField(key: string) {
   if (columns.value.length <= 1) return
-  columns.value = columns.value.filter(col => col.id !== id)
+  columns.value = columns.value.filter(col => col.key !== key)
   if (columns.value.length === 0) addColumnField()
 }
 
@@ -92,6 +128,25 @@ function submit() {
   }
 
   const { name: boardTitle, columns: columnTitles } = result.data
+
+  if (isEdit.value && props.boardId) {
+    const preparedColumns = columns.value.map((col, index) => ({
+      id: col.existingId,
+      title: columnTitles[index],
+    }))
+    const board = boards.updateBoard(props.boardId, { title: boardTitle, columns: preparedColumns })
+    if (!board) {
+      nameError.value = 'Could not update board'
+      return
+    }
+
+    close()
+    if (route.name === 'board') {
+      router.push({ name: 'board', params: { slug: board.slug } })
+    }
+    return
+  }
+
   const board = boards.addBoard(boardTitle, columnTitles)
   if (!board) {
     nameError.value = 'Could not create board'
@@ -104,7 +159,7 @@ function submit() {
 </script>
 
 <template>
-  <Modal v-model="open" :closeOnBackdrop="true" title="Add New Board">
+  <Modal v-model="open" :title="isEdit ? 'Edit Board' : 'Add New Board'">
     <div class="grid gap-4 text-sm">
       <div class="grid gap-2">
         <label class="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Name</label>
@@ -120,7 +175,7 @@ function submit() {
       <div class="grid gap-2">
         <label class="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Columns</label>
         <div class="grid gap-2">
-          <div v-for="(column, index) in columns" :key="column.id" class="flex items-center gap-2">
+          <div v-for="(column, index) in columns" :key="column.key" class="flex items-center gap-2">
             <input
               v-model="column.title"
               class="input"
@@ -130,7 +185,7 @@ function submit() {
             <button
               class="btn-outline px-3 py-2 text-xs"
               type="button"
-              @click="removeColumnField(column.id)"
+              @click="removeColumnField(column.key)"
               :disabled="columns.length <= 1"
             >
               Remove
@@ -146,7 +201,7 @@ function submit() {
 
     <template #actions>
       <button class="btn-primary w-full" type="button" @click="submit">
-        Create New Board
+        {{ isEdit ? 'Save Changes' : 'Create New Board' }}
       </button>
     </template>
   </Modal>

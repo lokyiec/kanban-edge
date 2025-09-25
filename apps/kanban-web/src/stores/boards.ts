@@ -120,17 +120,17 @@ export const useBoardsStore = defineStore('boards', () => {
       .replace(/-+/g, '-')
   }
 
-  function createUniqueSlug(title: string) {
+  function createUniqueSlug(title: string, excludeBoardId?: string) {
     const base = slugify(title)
     if (!base) {
       let slug = generateId('board-')
-      while (boards.value.some(b => b.slug === slug)) slug = generateId('board-')
+      while (boards.value.some(b => b.slug === slug && b.id !== excludeBoardId)) slug = generateId('board-')
       return slug
     }
 
     let slug = base
     let counter = 1
-    while (boards.value.some(b => b.slug === slug)) {
+    while (boards.value.some(b => b.slug === slug && b.id !== excludeBoardId)) {
       slug = `${base}-${counter}`
       counter += 1
     }
@@ -166,5 +166,44 @@ export const useBoardsStore = defineStore('boards', () => {
     return board
   }
 
-  return { boards, firstBoardSlug, getBySlug, getById, addColumn, addBoard }
+  function updateBoard(boardId: string, payload: { title: string; columns: { id?: string; title: string }[] }) {
+    const board = getById(boardId)
+    if (!board) return null
+
+    const boardTitle = payload.title.trim()
+    if (!boardTitle) return null
+
+    board.title = boardTitle
+    board.slug = createUniqueSlug(boardTitle, board.id)
+
+    const trimmed = payload.columns
+      .map(col => ({ id: col.id, title: col.title.trim() }))
+      .filter(col => col.title.length > 0)
+
+    const existingMap = new Map(board.columns.map(col => [col.id, col]))
+    const nextColumns: Column[] = []
+
+    trimmed.forEach(col => {
+      if (col.id && existingMap.has(col.id)) {
+        const existing = existingMap.get(col.id)!
+        existing.title = col.title
+        existingMap.delete(col.id)
+        nextColumns.push(existing)
+      } else {
+        nextColumns.push({ id: generateId('c'), boardId: board.id, title: col.title, cards: [] })
+      }
+    })
+
+    board.columns = nextColumns
+    return board
+  }
+
+  function deleteBoard(boardId: string) {
+    const index = boards.value.findIndex(board => board.id === boardId)
+    if (index === -1) return null
+    const [removed] = boards.value.splice(index, 1)
+    return removed ?? null
+  }
+
+  return { boards, firstBoardSlug, getBySlug, getById, addColumn, addBoard, updateBoard, deleteBoard }
 })
