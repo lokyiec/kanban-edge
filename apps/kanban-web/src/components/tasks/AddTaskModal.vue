@@ -4,28 +4,26 @@ import { z } from 'zod'
 import Modal from '../ui/Modal.vue'
 import { useBoardsStore } from '../../stores/boards'
 
-const props = withDefaults(defineProps<{ modelValue: boolean; cardId?: string | null }>(), {
-  cardId: null,
+const props = withDefaults(defineProps<{ modelValue: boolean; boardId?: string | null }>(), {
+  boardId: null,
 })
 
 const emit = defineEmits<{
   (e: 'update:modelValue', value: boolean): void
+  (e: 'created', cardId: string): void
   (e: 'cancel'): void
-  (e: 'saved'): void
 }>()
 
 const open = ref(props.modelValue)
 const boards = useBoardsStore()
 
-const details = computed(() => (props.cardId ? boards.getCardDetails(props.cardId) : null))
-const card = computed(() => details.value?.card ?? null)
-const boardId = computed(() => details.value?.board?.id ?? null)
-const statusOptions = computed(() => boards.getStatusOptions(boardId.value))
+const statusOptions = computed(() => boards.getStatusOptions(props.boardId))
+const canSubmit = computed(() => Boolean(props.boardId && statusOptions.value.length))
 
 const title = ref('')
 const description = ref('')
 const status = ref('')
-const subtasks = ref<{ key: string; title: string; id?: string }[]>([])
+const subtasks = ref<{ key: string; title: string }[]>([])
 const titleError = ref('')
 const subtasksError = ref('')
 const statusError = ref('')
@@ -38,24 +36,17 @@ const formSchema = z.object({
     .min(1, 'Add at least one subtask'),
 })
 
-function createSubtaskField(value = '', id?: string) {
-  return { key: Math.random().toString(36).slice(2, 9), title: value, id }
+function createSubtaskField(value = '') {
+  return { key: Math.random().toString(36).slice(2, 9), title: value }
 }
 
 function resetForm() {
-  const value = card.value
-  title.value = value?.title ?? ''
-  description.value = value?.description ?? ''
-  status.value = value?.columnId ?? ''
-  if (!status.value && statusOptions.value.length) {
-    status.value = statusOptions.value[0].id
-  }
-  subtasks.value = value?.subtasks.length
-    ? value.subtasks.map(subtask => createSubtaskField(subtask.title, subtask.id))
-    : [createSubtaskField('')]
+  title.value = ''
+  description.value = ''
+  status.value = statusOptions.value[0]?.id ?? ''
+  subtasks.value = [createSubtaskField('')]
   titleError.value = ''
   subtasksError.value = ''
-  statusError.value = ''
   statusError.value = ''
 }
 
@@ -68,7 +59,7 @@ watch(
 )
 
 watch(
-  () => props.cardId,
+  () => props.boardId,
   () => {
     if (open.value) resetForm()
   },
@@ -78,23 +69,15 @@ watch(open, value => {
   emit('update:modelValue', value)
 })
 
-watch(card, value => {
-  if (open.value && !value) open.value = false
-})
-
-watch(
-  statusOptions,
-  options => {
-    if (!options.length) {
-      status.value = ''
-      return
-    }
-    if (!options.some(option => option.id === status.value)) {
-      status.value = options[0].id
-    }
-  },
-  { immediate: true },
-)
+watch(statusOptions, options => {
+  if (!options.length) {
+    status.value = ''
+    return
+  }
+  if (!options.some(option => option.id === status.value)) {
+    status.value = options[0].id
+  }
+}, { immediate: true })
 
 function close() {
   open.value = false
@@ -117,6 +100,7 @@ function removeSubtask(key: string) {
 function submit() {
   titleError.value = ''
   subtasksError.value = ''
+  statusError.value = ''
 
   const result = formSchema.safeParse({
     title: title.value,
@@ -134,22 +118,35 @@ function submit() {
     return
   }
 
-  if (!card.value) return
+  if (!props.boardId) {
+    statusError.value = 'Select a board to continue'
+    return
+  }
 
-  boards.updateCard(card.value.id, {
+  if (!canSubmit.value) {
+    statusError.value = 'Add a column to this board to set a status'
+    return
+  }
+
+  const card = boards.addCard(props.boardId, {
     title: result.data.title,
     description: description.value,
-    columnId: status.value || card.value.columnId,
-    subtasks: subtasks.value.map(subtask => ({ id: subtask.id, title: subtask.title })),
+    columnId: status.value,
+    subtasks: subtasks.value.map(subtask => ({ title: subtask.title })),
   })
 
-  emit('saved')
+  if (!card) {
+    statusError.value = 'Could not create task'
+    return
+  }
+
+  emit('created', card.id)
   close()
 }
 </script>
 
 <template>
-  <Modal v-model="open" title="Edit Task" :close-on-backdrop="false">
+  <Modal v-model="open" title="Add New Task" :close-on-backdrop="false">
     <div class="space-y-4 text-sm">
       <div class="grid gap-2">
         <label class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Title</label>
@@ -166,7 +163,7 @@ function submit() {
         <label class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Subtasks</label>
         <div class="grid gap-2">
           <div v-for="subtask in subtasks" :key="subtask.key" class="flex items-center gap-2">
-            <input v-model="subtask.title" class="input" type="text" placeholder="Subtask title" />
+            <input v-model="subtask.title" class="input" type="text" placeholder="e.g. Make coffee" />
             <button class="btn-outline px-3 py-2 text-xs" type="button" @click="removeSubtask(subtask.key)">Remove</button>
           </div>
         </div>
@@ -176,19 +173,20 @@ function submit() {
 
       <div class="grid gap-2">
         <label class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Status</label>
-        <select v-model="status" class="input">
+        <select v-model="status" class="input" :disabled="!statusOptions.length">
           <option v-for="option in statusOptions" :key="option.id" :value="option.id">
             {{ option.title }}
           </option>
         </select>
         <p v-if="statusError" class="text-xs text-destructive">{{ statusError }}</p>
+        <p v-else-if="!statusOptions.length" class="text-xs text-muted-foreground">Add a column to this board to set statuses.</p>
       </div>
     </div>
 
     <template #actions>
       <div class="flex justify-end gap-2">
         <button class="btn-outline" type="button" @click="cancel">Cancel</button>
-        <button class="btn-primary" type="button" @click="submit">Save Changes</button>
+        <button class="btn-primary" type="button" :disabled="!canSubmit" @click="submit">Create Task</button>
       </div>
     </template>
   </Modal>

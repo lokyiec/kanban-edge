@@ -6,6 +6,7 @@ export type Subtask = { id: string; title: string; done: boolean }
 export type Card = TCard & { description?: string; subtasks: Subtask[] }
 export type Board = TBoard & { slug: string; columns: Column[] }
 export type Column = TColumn & { cards: Card[] }
+export type StatusOption = Pick<TColumn, 'id' | 'title'>
 
 export const useBoardsStore = defineStore('boards', () => {
   const boards = ref<Board[]>([
@@ -314,7 +315,14 @@ export const useBoardsStore = defineStore('boards', () => {
     },
   ])
 
-  const firstBoardSlug = computed(() => boards.value[0]?.slug);
+  const firstBoardSlug = computed(() => boards.value[0]?.slug)
+
+  const statusOptionsByBoard = computed<Record<string, StatusOption[]>>(() =>
+    boards.value.reduce((accumulator, board) => {
+      accumulator[board.id] = board.columns.map(column => ({ id: column.id, title: column.title }))
+      return accumulator
+    }, {} as Record<string, StatusOption[]>),
+  )
 
   function getBySlug(slug: string) {
     return boards.value.find(b => b.slug === slug) || null
@@ -322,6 +330,17 @@ export const useBoardsStore = defineStore('boards', () => {
 
   function getById(id: string) {
     return boards.value.find(b => b.id === id) || null
+  }
+
+  function getStatusOptions(boardId: string | null | undefined) {
+    if (!boardId) return []
+    return statusOptionsByBoard.value[boardId] ?? []
+  }
+
+  function getStatusOptionsBySlug(slug: string | null | undefined) {
+    if (!slug) return []
+    const board = getBySlug(slug)
+    return board ? getStatusOptions(board.id) : []
   }
 
   function generateId(prefix: string) {
@@ -529,11 +548,48 @@ export const useBoardsStore = defineStore('boards', () => {
     return null
   }
 
+  function addCard(
+    boardId: string,
+    payload: {
+      title: string
+      description?: string
+      columnId: string
+      subtasks: { title: string }[]
+    },
+  ) {
+    const board = getById(boardId)
+    if (!board) return null
+
+    const title = payload.title.trim()
+    if (!title) return null
+
+    const column = board.columns.find(col => col.id === payload.columnId)
+    if (!column) return null
+
+    const card: Card = {
+      id: generateId('t'),
+      columnId: column.id,
+      title,
+      description: payload.description?.trim() ?? '',
+      subtasks: payload.subtasks
+        .map(subtask => subtask.title.trim())
+        .filter(Boolean)
+        .map(subtaskTitle => ({ id: generateId('s'), title: subtaskTitle, done: false })),
+    }
+
+    column.cards.push(card)
+    return card
+  }
+
   return {
     boards,
     firstBoardSlug,
+    statusOptionsByBoard,
     getBySlug,
     getById,
+    getStatusOptions,
+    getStatusOptionsBySlug,
+    addCard,
     addColumn,
     addBoard,
     updateBoard,

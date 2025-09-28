@@ -3,6 +3,7 @@ import AppHeader from './AppHeader.vue'
 import AppSidebar from './AppSidebar.vue'
 import AddBoardModal from '../boards/AddBoardModal.vue'
 import ConfirmDeleteBoardModal from '../boards/ConfirmDeleteBoardModal.vue'
+import AddTaskModal from '../tasks/AddTaskModal.vue'
 import { useUiStore } from '../../stores/ui'
 
 const ui = useUiStore()
@@ -27,5 +28,10 @@ const ui = useUiStore()
   <ConfirmDeleteBoardModal
     v-model="ui.deleteBoardModalOpen"
     :board-id="ui.deletingBoardId || undefined"
+  />
+  <AddTaskModal
+    v-model="ui.createTaskModalOpen"
+    :board-id="ui.creatingTaskBoardId"
+    @cancel="ui.closeCreateTaskModal()"
   />
 </template>

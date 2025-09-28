@@ -36,6 +36,7 @@ const currentBoard = computed(() => {
 
 const currentBoardTitle = computed(() => currentBoard.value?.title ?? 'Kanban')
 const hasBoard = computed(() => Boolean(currentBoard.value))
+const canCreateTask = computed(() => Boolean(currentBoard.value && currentBoard.value.columns.length))
 
 function toggleMenu() {
   menuOpen.value = !menuOpen.value
@@ -49,6 +50,12 @@ function handleOutsideClick(event: MouseEvent) {
 
 function closeMenu() {
   menuOpen.value = false
+}
+
+function handleAddTask() {
+  const board = currentBoard.value
+  if (!board || !board.columns.length) return
+  ui.openCreateTaskModal(board.id)
 }
 
 function handleEditBoard() {
@@ -72,7 +79,7 @@ function handleDeleteBoard() {
       <span class="font-semibold">{{ currentBoardTitle }}</span>
     </div>
     <div class="flex items-center gap-2">
-      <button class="btn-primary" :disabled="!hasBoard">+ Add New Task</button>
+      <button class="btn-primary" :disabled="!canCreateTask" @click="handleAddTask">+ Add New Task</button>
       <div class="relative" ref="menuRef">
         <button class="btn-outline h-9 w-9 p-0" type="button" @click.stop="toggleMenu">⋯</button>
         <div

@@ -21,7 +21,8 @@ const menuRef = ref<HTMLElement | null>(null)
 
 const details = computed(() => (props.cardId ? boards.getCardDetails(props.cardId) : null))
 const card = computed(() => details.value?.card ?? null)
-const boardColumns = computed(() => details.value?.board?.columns ?? [])
+const boardId = computed(() => details.value?.board?.id ?? null)
+const statusOptions = computed(() => boards.getStatusOptions(boardId.value))
 
 const subtasksCompleted = computed(() => card.value?.subtasks.filter(subtask => subtask.done).length ?? 0)
 const subtasksTotal = computed(() => card.value?.subtasks.length ?? 0)
@@ -143,8 +144,8 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside))
           @change="updateStatus(($event.target as HTMLSelectElement).value)"
           :disabled="!card"
         >
-          <option v-for="column in boardColumns" :key="column.id" :value="column.id">
-            {{ column.title }}
+          <option v-for="option in statusOptions" :key="option.id" :value="option.id">
+            {{ option.title }}
           </option>
         </select>
       </section>
