@@ -1,0 +1,4 @@
+name = "kanban-edge"
+main = ".output/server/index.mjs"
+compatibility_date = "2025-09-28"
+account_id = "${CLOUDFLARE_ACCOUNT_ID}"
