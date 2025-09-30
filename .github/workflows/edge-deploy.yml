@@ -8,22 +8,11 @@ on:
       - "package.json"
       - "package-lock.json"
       - "turbo.json"
-  pull_request:
-    branches: [master]
-    types: [opened, synchronize, reopened]
-    paths:
-      - "apps/edge/**"
-      - "package.json"
-      - "package-lock.json"
-      - "turbo.json"
-  workflow_dispatch: # manual trigger
+  workflow_dispatch:
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    env:
-      CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-      CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
     steps:
       - uses: actions/checkout@v4
@@ -36,22 +25,14 @@ jobs:
             **/package-lock.json
 
       - name: Install deps
-        run: |
-          if [ -f package-lock.json ]; then npm ci; else npm install; fi
+        run: npm ci
 
       - name: Build monorepo
         run: npm run build
 
-      - name: Verify Cloudflare auth # sanity check; uses env-provided creds
-        run: npx wrangler@latest whoami
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ env.CF_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ env.CF_ACCOUNT_ID }}
-
       - name: Deploy with Wrangler
-        if: ${{ github.event_name != 'pull_request' }} # skip deploy on PRs
         uses: cloudflare/wrangler-action@v3
         with:
-          apiToken: ${{ env.CF_API_TOKEN }}
-          accountId: ${{ env.CF_ACCOUNT_ID }}
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           workingDirectory: apps/edge
