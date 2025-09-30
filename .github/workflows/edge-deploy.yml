@@ -2,12 +2,21 @@ name: Deploy Edge (Worker)
 
 on:
   push:
-    branches: [main]
+    branches: [master]
     paths:
       - "apps/edge/**"
       - "package.json"
       - "package-lock.json"
       - "turbo.json"
+  pull_request:
+    branches: [master]
+    types: [opened, synchronize, reopened]
+    paths:
+      - "apps/edge/**"
+      - "package.json"
+      - "package-lock.json"
+      - "turbo.json"
+  workflow_dispatch: # manual trigger
 
 jobs:
   deploy:
@@ -33,13 +42,14 @@ jobs:
       - name: Build monorepo
         run: npm run build
 
-      - name: Verify Cloudflare auth (optional)
+      - name: Verify Cloudflare auth # sanity check; uses env-provided creds
         run: npx wrangler@latest whoami
         env:
           CLOUDFLARE_API_TOKEN: ${{ env.CF_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ env.CF_ACCOUNT_ID }}
 
       - name: Deploy with Wrangler
+        if: ${{ github.event_name != 'pull_request' }} # skip deploy on PRs
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ env.CF_API_TOKEN }}

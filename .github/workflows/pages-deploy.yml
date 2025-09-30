@@ -2,12 +2,21 @@ name: Deploy Web (Pages)
 
 on:
   push:
-    branches: [main]
+    branches: [master]
     paths:
       - "apps/kanban-web/**"
       - "package.json"
       - "package-lock.json"
       - "turbo.json"
+  pull_request:
+    branches: [master]
+    types: [opened, synchronize, reopened]
+    paths:
+      - "apps/kanban-web/**"
+      - "package.json"
+      - "package-lock.json"
+      - "turbo.json"
+  workflow_dispatch: # manual trigger
 
 jobs:
   deploy:
@@ -39,10 +48,11 @@ jobs:
         with:
           apiToken: ${{ env.CF_API_TOKEN }}
           accountId: ${{ env.CF_ACCOUNT_ID }}
-          command: pages project create kanban-web --production-branch=main
+          command: pages project create kanban-web --production-branch=master
         continue-on-error: true
 
       - name: Deploy to Cloudflare Pages
+        if: ${{ github.event_name != 'pull_request' }} # skip deploy on PRs
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ env.CF_API_TOKEN }}
